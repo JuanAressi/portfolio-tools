@@ -2,7 +2,8 @@
 
 Personal utility hub: **URL shortener** + **one-time encrypted secrets**.
 
-Live demo (after deploy): `https://<your-app>.vercel.app`  
+Live demo (after deploy): set after Vercel import — see Deploy below.  
+Source: [github.com/JuanAressi/portfolio-tools](https://github.com/JuanAressi/portfolio-tools)  
 Portfolio: [juanaressi.github.io/portfolio-interactive](https://juanaressi.github.io/portfolio-interactive/)
 
 ## Tools
