@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portfolio Tools
 
-## Getting Started
+Personal utility hub: **URL shortener** + **one-time encrypted secrets**.
 
-First, run the development server:
+Live demo (after deploy): `https://<your-app>.vercel.app`  
+Portfolio: [juanaressi.github.io/portfolio-interactive](https://juanaressi.github.io/portfolio-interactive/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Tools
+
+### URL shortener
+
+1. `POST /api/shorten` stores `s:{code} → url` in Redis.
+2. `GET /s/{code}` looks up the key and returns **302** to the destination.
+3. Codes expire after 90 days. Rate-limited.
+
+### One-time secret
+
+1. Browser encrypts with **AES-GCM** (Web Crypto). Plaintext never leaves the client.
+2. Server stores **ciphertext only** under `x:{id}` (7-day TTL if unopened).
+3. Link format: `/x/{id}#{key}.{iv}` — the `#fragment` is not sent to the server.
+4. `GET /api/secrets/{id}` uses Redis **`GETDEL`** (atomic). Second visitor gets **410 Gone**.
+
+```
+Sender encrypts → POST ciphertext → share link with #key
+Receiver opens → GETDEL ciphertext → decrypt in browser → gone forever
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Next.js (App Router) + TypeScript
+- Upstash Redis
+- Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local setup
 
-## Learn More
+```bash
+cp .env.example .env.local
+# fill UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy (Vercel + Upstash, ~$0)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create a free Redis DB at [Upstash](https://console.upstash.com).
+2. Push this repo to GitHub.
+3. Import the repo in [Vercel](https://vercel.com) → Framework: Next.js.
+4. Add env vars `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+5. Deploy. You get `https://<project>.vercel.app` with no custom domain required.
+6. Link that URL from your portfolio.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project layout
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/app/          pages + API routes
+src/lib/crypto.ts client AES-GCM
+src/lib/redis.ts  Upstash client
+src/lib/rate-limit.ts
+src/lib/url.ts    URL allowlist
+```
